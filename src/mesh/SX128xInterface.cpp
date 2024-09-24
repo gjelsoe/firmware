@@ -31,11 +31,6 @@ template <typename T> bool SX128xInterface<T>::init()
     digitalWrite(SX128X_POWER_EN, HIGH);
 #endif
 
-#ifdef RF95_FAN_EN
-    pinMode(RF95_FAN_EN, OUTPUT);
-    digitalWrite(RF95_FAN_EN, 1);
-#endif
-
 #if ARCH_PORTDUINO
     if (settingsMap[rxen] != RADIOLIB_NC) {
         pinMode(settingsMap[rxen], OUTPUT);

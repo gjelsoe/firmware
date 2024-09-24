@@ -424,6 +424,8 @@ void AdminModule::handleSetConfig(const meshtastic_Config &c)
     auto existingRole = config.device.role;
     bool isRegionUnset = (config.lora.region == meshtastic_Config_LoRaConfig_RegionCode_UNSET);
     bool requiresReboot = true;
+    bool isFanDisabled = c.payload_variant.lora.pa_fan_disabled;
+    int pwmValue = 0;
 
     switch (c.which_payload_variant) {
     case meshtastic_Config_device_tag:
@@ -511,9 +513,11 @@ void AdminModule::handleSetConfig(const meshtastic_Config &c)
 #if !defined(ARCH_PORTDUINO) && !defined(ARCH_STM32WL) && !MESHTASTIC_EXCLUDE_ENVIRONMENTAL_SENSOR
         if (config.display.wake_on_tap_or_motion == false && c.payload_variant.display.wake_on_tap_or_motion == true &&
             accelerometerThread->enabled == false) {
+            accelerometerThread->enabled = true;
             accelerometerThread->start();
         }
 #endif
+        LOG_DEBUG("CONFIG() enabled = %d\n", accelerometerThread->enabled);
         config.display = c.payload_variant.display;
         break;
     case meshtastic_Config_lora_tag:
@@ -534,13 +538,18 @@ void AdminModule::handleSetConfig(const meshtastic_Config &c)
         }
 
 #ifdef RF95_FAN_EN
-        // Turn PA off if disabled by config
-        if (c.payload_variant.lora.pa_fan_disabled) {
-            digitalWrite(RF95_FAN_EN, LOW ^ 0);
-        } else {
-            digitalWrite(RF95_FAN_EN, HIGH ^ 0);
-        }
+#ifdef RF95_FAN_PWM
+        pwmValue = isFanDisabled ? 0 : (moduleConfig.external_notification.output_ms * 2.55);
+#if defined(ESP32)
+        ledcWrite(1, pwmValue);
+#elif defined(NFR52)
+        analogWrite(RF95_FAN_PWM, pwmValue);
 #endif
+#else
+        digitalWrite(RF95_FAN_EN, isFanDisabled ? LOW : HIGH);
+#endif
+#endif
+
         config.lora = c.payload_variant.lora;
         // If we're setting region for the first time, init the region
         if (isRegionUnset && config.lora.region > meshtastic_Config_LoRaConfig_RegionCode_UNSET) {

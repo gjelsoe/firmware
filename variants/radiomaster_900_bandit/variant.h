@@ -44,8 +44,9 @@
 /*
   This unit has a FAN built-in.
   FAN is active at 250mW on it's ExpressLRS Firmware.
-  This FAN has TACHO signal on Pin 27 for use with PWM.
+  This FAN has TACHO signal on Pin 27 (Unused).
 */
+#define RF95_FAN_PWM
 #define RF95_FAN_EN 2
 
 /*

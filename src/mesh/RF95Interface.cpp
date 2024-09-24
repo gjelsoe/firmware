@@ -153,11 +153,6 @@ bool RF95Interface::init()
     digitalWrite(RF95_TXEN, 0);
 #endif
 
-#ifdef RF95_FAN_EN
-    pinMode(RF95_FAN_EN, OUTPUT);
-    digitalWrite(RF95_FAN_EN, 1);
-#endif
-
 #ifdef RF95_RXEN
     pinMode(RF95_RXEN, OUTPUT);
     digitalWrite(RF95_RXEN, 1);
@@ -331,7 +326,15 @@ bool RF95Interface::sleep()
     lora->sleep();
 
 #ifdef RF95_FAN_EN
+#ifdef RF95_FAN_PWM
+#if defined(ESP32)
+    ledcWrite(1, 0);
+#elif defined(NFR52)
+    analogWrite(RF95_FAN_PWM, 0);
+#endif
+#else
     digitalWrite(RF95_FAN_EN, 0);
+#endif
 #endif
 
     return true;

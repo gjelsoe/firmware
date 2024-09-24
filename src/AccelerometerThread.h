@@ -74,6 +74,7 @@ class AccelerometerThread : public concurrency::OSThread
     void start()
     {
         init();
+        enabled = true;
         setIntervalFromNow(0);
     };
 

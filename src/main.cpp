@@ -1021,15 +1021,36 @@ void setup()
 #endif
 
 #ifdef RF95_FAN_EN
-    // Ability to disable FAN if PIN has been set with RF95_FAN_EN.
-    // Make sure LoRa has been started before disabling FAN.
-    if (config.lora.pa_fan_disabled)
-        digitalWrite(RF95_FAN_EN, LOW ^ 0);
+#ifdef RF95_FAN_PWM
+    bool isFanDisabled = config.lora.pa_fan_disabled;
+#if defined(ESP32)
+    // Set up PWM at Channel 1 at 25KHz, using 8-bit resolution
+    // Turn ON/OFF fan to the specified value if enabled by config.
+    if (ledcSetup(1, 25000, 8)) {
+        ledcAttachPin(RF95_FAN_EN, 1);
+        LOG_INFO("PWM initialized using Channel 1 on PIN %d\n", RF95_FAN_EN);
+
+        // Set PWM duty cycle based on fan disabled state
+        int pwmValue = isFanDisabled ? 0 : (moduleConfig.external_notification.output_ms * 2.55);
+        ledcWrite(1, pwmValue);
+    } else {
+        LOG_ERROR("Unable to setup PWM of FAN on PIN %d\n", RF95_FAN_EN);
+    }
+#elif defined(NFR52)
+    pinMode(RF95_FAN_PWM, OUTPUT);
+    analogWrite(RF95_FAN_PWM, pwmValue);
+#endif
+#else
+    // Set up as ON/OFF switch of fan
+    // Turn it ON if enabled by config.
+    pinMode(RF95_FAN_EN, OUTPUT);
+    digitalWrite(RF95_FAN_EN, isFanDisabled ? LOW : HIGH);
+#endif
 #endif
 
 #ifndef ARCH_PORTDUINO
 
-        // Initialize Wifi
+    // Initialize Wifi
 #if HAS_WIFI
     initWifi();
 #endif
