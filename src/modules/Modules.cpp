@@ -114,6 +114,9 @@ void setupModules()
 #if !MESHTASTIC_EXCLUDE_TEXTMESSAGE
         textMessageModule = new TextMessageModule();
 #endif
+#if !MESHTASTIC_EXCLUDE_TEXTMESSAGEFORWARD
+        textMessageforwardModule = new TextMessageForwardModule();
+#endif
 #if !MESHTASTIC_EXCLUDE_TRACEROUTE
         traceRouteModule = new TraceRouteModule();
 #endif
