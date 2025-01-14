@@ -12,6 +12,7 @@
 #include "PhoneAPI.h"
 #include "PowerFSM.h"
 #include "RadioInterface.h"
+#include "SPILock.h"
 #include "TypeConversions.h"
 #include "main.h"
 #include "xmodem.h"
@@ -54,7 +55,9 @@ void PhoneAPI::handleStartConfig()
     // even if we were already connected - restart our state machine
     state = STATE_SEND_MY_INFO;
     pauseBluetoothLogging = true;
+    spiLock->lock();
     filesManifest = getFiles("/", 10);
+    spiLock->unlock();
     LOG_DEBUG("Got %d files in manifest", filesManifest.size());
 
     LOG_INFO("Start API client config");
@@ -164,6 +167,7 @@ bool PhoneAPI::handleToRadio(const uint8_t *buf, size_t bufLength)
  *
  * Our sending states progress in the following sequence (the client apps ASSUME THIS SEQUENCE, DO NOT CHANGE IT):
     STATE_SEND_MY_INFO, // send our my info record
+    STATE_SEND_UIDATA,
     STATE_SEND_OWN_NODEINFO,
     STATE_SEND_METADATA,
     STATE_SEND_CHANNELS
@@ -289,6 +293,9 @@ size_t PhoneAPI::getFromRadio(uint8_t *buf)
         case meshtastic_Config_sessionkey_tag:
             LOG_DEBUG("Send config: sessionkey");
             fromRadioScratch.config.which_payload_variant = meshtastic_Config_sessionkey_tag;
+            break;
+        case meshtastic_Config_device_ui_tag: // NOOP!
+            fromRadioScratch.config.which_payload_variant = meshtastic_Config_device_ui_tag;
             break;
         default:
             LOG_ERROR("Unknown config type %d", config_state);
